@@ -20,6 +20,8 @@
 
 @property (nonatomic, strong) NSString* onChangeCallbackId;
 
+@property (nonatomic, strong) NSString* onKeyboardClosedCallbackId;
+
 @property (nonatomic, strong) NSString* onKeyboardActionCallbackId;
 
 @property (nonatomic, strong) NSString* onButtonActionCallbackId;
@@ -27,6 +29,8 @@
 @property (nonatomic) CGFloat originalLeftXPosition;
 
 @property (nonatomic) BOOL autoCloseKeyboard;
+
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *toolbarContainerVerticalSpacingConstraint;
 
 @end
 
@@ -40,7 +44,7 @@ int INPUT_ARG = 1;
 int LEFT_BUTTON_ARG = 2;
 int RIGHT_BUTTON_ARG = 3;
 
-@synthesize inputView, webViewOriginalBaseScrollInsets, originalLeftXPosition, lastOnChange, lastTextSentOnChange, onChangeCallbackId, onKeyboardActionCallbackId, onButtonActionCallbackId, autoCloseKeyboard;
+@synthesize inputView, webViewOriginalBaseScrollInsets, originalLeftXPosition, lastOnChange, lastTextSentOnChange, onChangeCallbackId, onKeyboardActionCallbackId, onButtonActionCallbackId, autoCloseKeyboard, onKeyboardClosedCallbackId;
 
 - (AGNativeInput*)initWithWebView:(UIWebView*)theWebView {
     self = (AGNativeInput*)[super initWithWebView:(UIWebView*)theWebView];
@@ -74,16 +78,9 @@ int RIGHT_BUTTON_ARG = 3;
 }
 
 -(void)setupNotifications{
-    
-    // register for keyboard notifications
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillShow:)
-                                                 name:UIKeyboardWillShowNotification
-                                               object:nil];
-    // register for keyboard notifications
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(keyboardWillHide:)
-                                                 name:UIKeyboardWillHideNotification
+                                             selector:@selector(keyboardDidHide:)
+                                                 name:UIKeyboardDidHideNotification
                                                object:nil];
 }
 
@@ -117,7 +114,7 @@ int RIGHT_BUTTON_ARG = 3;
     [self.inputView removeFromSuperview];
 }
 
--(void)increateWebViewBaseScrollInsets{
+-(void)increaseWebViewBaseScrollInsets{
     CGFloat newBottom = self.webViewOriginalBaseScrollInsets.bottom + self.inputViewHeight;
     
     self.webViewController.baseScrollInsets = UIEdgeInsetsMake(self.webViewController.baseScrollInsets.top, self.webViewController.baseScrollInsets.left, newBottom, self.webViewController.baseScrollInsets.right);
@@ -229,7 +226,7 @@ int RIGHT_BUTTON_ARG = 3;
     
 }
 
--(void)addInputViewTpSuperView{
+-(void)addInputViewToSuperView{
     
     if([self.webView.superview.subviews containsObject:self.inputView]){
         return;
@@ -248,14 +245,30 @@ int RIGHT_BUTTON_ARG = 3;
     
     [self.webView.superview.superview addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[inputView(inputViewHeight)]-bottomGap-|"
                                                                                              options:0 metrics:metrics views:viewsDictionary]];
+
+    FrameObservingInputAccessoryView *frameObservingView = [[FrameObservingInputAccessoryView alloc] initWithFrame:CGRectMake(0, 0, self.webView.superview.frame.size.width, self.inputViewHeight)];
+    
+    frameObservingView.userInteractionEnabled = NO;
+    
+    self.inputView.inputField.inputAccessoryView = frameObservingView;
+    
+    __weak typeof(self)weakSelf = self;
+    
+    frameObservingView.inputAcessoryViewFrameChangedBlock = ^(CGRect inputAccessoryViewFrame){
+        CGFloat accessoryY = CGRectGetMinY(inputAccessoryViewFrame);
+        CGRect newFrame = CGRectMake(weakSelf.inputView.frame.origin.x,
+                                     MAX(0, accessoryY),
+                                     weakSelf.inputView.frame.size.width,
+                                     weakSelf.inputView.frame.size.height);
+        
+        weakSelf.inputView.frame = newFrame;
+        
+        [weakSelf.webView.superview layoutIfNeeded];
+    };
 }
 
-- (void)show:(CDVInvokedUrlCommand*)command{
-    
-    [self increateWebViewBaseScrollInsets];
-    [self addInputViewTpSuperView];
-    
-    self.inputView.hidden = NO;
+- (void)setup:(CDVInvokedUrlCommand*)command{
+    [self addInputViewToSuperView];
     
     if([self isValidDictionaryWithValues:[command.arguments objectAtIndex:PANEL_ARG]]){
         NSDictionary* inputOptions = (NSDictionary*)[command.arguments objectAtIndex:INPUT_ARG];
@@ -289,15 +302,35 @@ int RIGHT_BUTTON_ARG = 3;
     else{
         [self.inputView hideButtons];
     }
+    
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
+}
+
+- (void)show:(CDVInvokedUrlCommand*)command{
+    if(command.arguments.count > 0 && [self isNotNull:[command.arguments objectAtIndex:0]]){
+        NSString* value = [command.arguments objectAtIndex:0];
+        self.inputView.inputField.text = value;
+    }
+    
+    [self addInputViewToSuperView];
+    
+    self.inputView.hidden = NO;
+    
+    [inputView.inputField becomeFirstResponder];
+    
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
 - (void)hide:(CDVInvokedUrlCommand*)command{
     [self resetWebViewBaseScrollInsets];
     self.inputView.hidden = YES;
+    
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
 - (void)closeKeyboard:(CDVInvokedUrlCommand*)command{
     [self.inputView.inputField resignFirstResponder];
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
 - (void)onButtonAction:(CDVInvokedUrlCommand*)command{
@@ -305,12 +338,14 @@ int RIGHT_BUTTON_ARG = 3;
 }
 
 - (void)onKeyboardAction:(CDVInvokedUrlCommand*)command{
-    
-    if([self isNotNull:[command.arguments objectAtIndex:0]]){
+    if(command.arguments.count > 0 && [self isNotNull:[command.arguments objectAtIndex:0]]){
         self.autoCloseKeyboard = [[command.arguments objectAtIndex:0] boolValue];
     }
-    
     self.onKeyboardActionCallbackId = command.callbackId;
+}
+
+- (void)onKeyboardClose:(CDVInvokedUrlCommand*)command{
+    self.onKeyboardClosedCallbackId = command.callbackId;
 }
 
 - (void)onChange:(CDVInvokedUrlCommand*)command{
@@ -320,6 +355,18 @@ int RIGHT_BUTTON_ARG = 3;
 - (void)getValue:(CDVInvokedUrlCommand*)command{
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:self.inputView.inputField.text];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)setValue:(CDVInvokedUrlCommand*)command{
+    if(command.arguments.count > 0 && [self isNotNull:[command.arguments objectAtIndex:0]]){
+        NSString* value = [command.arguments objectAtIndex:0];
+        self.inputView.inputField.text = value;
+        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
+    }
+    else{
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Parameter required!"];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
 }
 
 -(void)sendOnChangeEvent{
@@ -425,14 +472,12 @@ int RIGHT_BUTTON_ARG = 3;
     [UIView commitAnimations];
 }
 
-- (void)keyboardWillHide:(NSNotification *)notification
-{
-    [self moveToBelowKeyboard:notification.userInfo];
-}
-
-- (void)keyboardWillShow:(NSNotification *)notification
-{
-    [self moveToAboveKeyboard:notification.userInfo];
+-(void)keyboardDidHide:(NSNotification *)notification{
+    if([self isNotNull:self.onKeyboardClosedCallbackId]){
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.onKeyboardClosedCallbackId];
+    }
 }
 
 @end
