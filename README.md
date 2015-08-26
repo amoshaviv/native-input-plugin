@@ -41,8 +41,8 @@ All components can be styled using css:
 ```
 
 ## Usage
-### cordova.plugins.NativeInput.show(params)
-
+### cordova.plugins.NativeInput.setup(params)
+setup the plugin with the parameters provided.
 ```
 params = {
       leftButton:{
@@ -63,7 +63,14 @@ params = {
       }
  }
 
- cordova.plugins.NativeInput.show(params);
+ cordova.plugins.NativeInput.setup(params);
+```
+
+## Usage
+### cordova.plugins.NativeInput.show(text)
+Show the input field panel and set the inputField text content.
+```
+ cordova.plugins.NativeInput.setup("lorem ipsum ...");
 ```
 
 #### leftButton / rightButton
@@ -149,6 +156,14 @@ Close the soft keyboard.
 cordova.plugins.NativeInput.closeKeyboard();
 ```
 
+### cordova.plugins.NativeInput.onKeyboardClose(handler)
+Get notified when the keyboard closes.
+```
+cordova.plugins.NativeInput.onKeyboardClose(function(){
+  ...
+});
+```
+
 ### cordova.plugins.NativeInput.onChange(handler)
 ```
 cordova.plugins.NativeInput.onChange(function(value){
@@ -162,5 +177,10 @@ The handler function will be called multiples times when the content of the inpu
 cordova.plugins.NativeInput.getValue(function(value){
   ... //do something with the value
 });
+```
+
+### cordova.plugins.NativeInput.setValue(text)
+```
+cordova.plugins.NativeInput.setValue("lorem ipsum...");
 ```
 The handler function will be called once with the current value of the input field.

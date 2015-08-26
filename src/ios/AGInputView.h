@@ -50,3 +50,11 @@
 -(void)showRightButton;
 
 @end
+
+@interface FrameObservingInputAccessoryView : UIView
+
+@property (nonatomic, copy) void (^inputAcessoryViewFrameChangedBlock)(CGRect frame);
+@property (nonatomic, readonly) CGRect inputAcesssorySuperviewFrame;
+
+@end
+

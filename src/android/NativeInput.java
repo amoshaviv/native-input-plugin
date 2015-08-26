@@ -36,6 +36,8 @@ public class NativeInput extends CordovaPlugin {
 
     static final int PANEL_ARG = 0;
 
+    static final int TEXT_ARG = 0;
+
     static final int INPUT_ARG = 1;
 
     static final int LEFT_BUTTON_ARG = 2;
@@ -48,9 +50,13 @@ public class NativeInput extends CordovaPlugin {
 
     private static final String SHOW = "show";
 
+    private static final String SETUP = "setup";
+
     private static final String HIDE = "hide";
 
     private static final String ON_CHANGE = "onChange";
+
+    private static final String ON_KEYBOARD_CLOSE = "onKeyboardClose";
 
     private static final String ON_KEYBOARD_ACTION = "onKeyboardAction";
 
@@ -101,6 +107,8 @@ public class NativeInput extends CordovaPlugin {
     private CallbackContext mOnChangeCallback;
 
     private CallbackContext mOnKeyboardActionCallback;
+
+    private CallbackContext mOnKeyboardCloseCallback;
 
     private CallbackContext mOnButtonActionCallback;
 
@@ -171,7 +179,20 @@ public class NativeInput extends CordovaPlugin {
         mPanel.setOrientation(LinearLayout.HORIZONTAL);
         AGStyler.setStyleClass(mPanel, NATIVE_INPUT_PANEL);
 
-        mEditText = new CustomEditText(webView.getContext());
+        mEditText = new CustomEditText(webView.getContext()){
+            @Override
+            public boolean onKeyPreIme(int keyCode, KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+                    if (mOnKeyboardCloseCallback != null) {
+                        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
+                        pluginResult.setKeepCallback(true);
+                        mOnKeyboardCloseCallback.sendPluginResult(pluginResult);
+                    }
+                    return false;
+                }
+                return super.onKeyPreIme(keyCode, event);
+            }
+        };
 
         AGStyler.setStyleClass(mEditText, NATIVE_INPUT);
 
@@ -200,7 +221,19 @@ public class NativeInput extends CordovaPlugin {
 
     public boolean execute(final String action, final JSONArray args,
             final CallbackContext callbackContext) throws JSONException {
-        if (action.equals(SHOW)) {
+
+        if (action.equals(SETUP)) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        setup(callbackContext, args);
+                    } catch (JSONException e) {
+                        callbackContext.error("Invalid JSON parameter - error: " + e.getMessage());
+                    }
+                }
+            });
+        } else if (action.equals(SHOW)) {
             cordova.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -217,7 +250,10 @@ public class NativeInput extends CordovaPlugin {
             onChange(callbackContext);
         } else if (action.equals(ON_KEYBOARD_ACTION)) {
             onKeyboardAction(callbackContext, args);
-        } else if (action.equals(ON_BUTTON_ACTION)) {
+        } else if (action.equals(ON_KEYBOARD_CLOSE)) {
+            onKeyboardClose(callbackContext, args);
+        }
+        else if (action.equals(ON_BUTTON_ACTION)) {
             onButtonAction(callbackContext);
         } else if (action.equals(GET_VALUE)) {
             getValue(callbackContext);
@@ -239,19 +275,16 @@ public class NativeInput extends CordovaPlugin {
         return value;
     }
 
-    private void show(final CallbackContext callbackContext, final JSONArray args)
+    private void setup(final CallbackContext callbackContext, final JSONArray args)
             throws JSONException {
-
         boolean hasRightButton = !args.isNull(RIGHT_BUTTON_ARG);
-        boolean hasLeftButton = !args.isNull(RIGHT_BUTTON_ARG);
+        boolean hasLeftButton = !args.isNull(LEFT_BUTTON_ARG);
 
         if (mPanel == null) {
             createBasicUi();
         }
 
         addEditTextToPanel(hasRightButton && hasLeftButton);
-
-        addPanelBelowWebView();
 
         if (!args.isNull(INPUT_ARG)) {
             setupEditTextOptions(args.getJSONObject(INPUT_ARG));
@@ -272,6 +305,18 @@ public class NativeInput extends CordovaPlugin {
         }
 
         AGStyler.updateStyle(mEditText);
+
+        callbackContext.success();
+    }
+
+    private void show(final CallbackContext callbackContext, final JSONArray args)
+            throws JSONException {
+
+        if (!args.isNull(TEXT_ARG)) {
+            mEditText.setText(args.optString(TEXT_ARG, ""));
+        }
+
+        addPanelBelowWebView();
 
         callbackContext.success();
     }
@@ -468,13 +513,12 @@ public class NativeInput extends CordovaPlugin {
         mOnButtonActionCallback = callbackContext;
     }
 
+    private void onKeyboardClose(CallbackContext callbackContext, JSONArray args) {
+        mOnKeyboardCloseCallback = callbackContext;
+    }
+
     private void onKeyboardAction(CallbackContext callbackContext, JSONArray args) {
-        try {
-            mAutoCloseKeyboard = true;
-            mAutoCloseKeyboard = args.getBoolean(AUTO_CLOSE_KEYBOARD);
-        } catch (JSONException e) {
-            /*no action*/
-        }
+        mAutoCloseKeyboard = args.optBoolean(AUTO_CLOSE_KEYBOARD, true);
         mOnKeyboardActionCallback = callbackContext;
     }
 
