@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14D136" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
@@ -34,14 +34,25 @@
                         <action selector="buttonTapped:" destination="iN0-l3-epB" eventType="touchUpInside" id="dyj-p9-fdy"/>
                     </connections>
                 </button>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="eAM-t8-cEQ">
+                    <rect key="frame" x="0.0" y="0.0" width="600" height="1"/>
+                    <color key="backgroundColor" white="0.85398677357456143" alpha="1" colorSpace="calibratedWhite"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="1" id="ppr-ZP-6Vu"/>
+                    </constraints>
+                </view>
             </subviews>
             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
             <constraints>
+                <constraint firstAttribute="trailing" secondItem="eAM-t8-cEQ" secondAttribute="trailing" id="3Zw-ga-Bn0"/>
                 <constraint firstItem="NNe-Lh-K6y" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="8" id="LF2-vz-0ye"/>
+                <constraint firstItem="eAM-t8-cEQ" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" id="LVS-95-vK9"/>
                 <constraint firstItem="pCD-zW-gcf" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="8" id="MCM-Ee-Wei"/>
                 <constraint firstItem="6wb-1B-FH4" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="8" id="THF-Z3-nMK"/>
+                <constraint firstItem="eAM-t8-cEQ" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" id="cei-1h-kUk"/>
                 <constraint firstAttribute="trailing" secondItem="pCD-zW-gcf" secondAttribute="trailing" constant="8" id="h9k-rq-2NI"/>
             </constraints>
+            <nil key="simulatedStatusBarMetrics"/>
             <connections>
                 <outlet property="inputField" destination="6wb-1B-FH4" id="iOJ-1a-mxF"/>
                 <outlet property="leftButton" destination="NNe-Lh-K6y" id="QwD-XN-EJB"/>
