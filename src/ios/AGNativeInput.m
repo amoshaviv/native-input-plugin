@@ -1,6 +1,7 @@
 
 
 #import "AGNativeInput.h"
+#import "ContainerViewController.h"
 
 //
 //  AGInputView.m
@@ -256,8 +257,11 @@ int RIGHT_BUTTON_ARG = 3;
     
     frameObservingView.inputAcessoryViewFrameChangedBlock = ^(CGRect inputAccessoryViewFrame){
         CGFloat accessoryY = CGRectGetMinY(inputAccessoryViewFrame);
+        
+        CGFloat bottomOfWebView = weakSelf.webView.superview.frame.size.height - weakSelf.inputView.frame.size.height - weakSelf.tabBarHeight;
+        
         CGRect newFrame = CGRectMake(weakSelf.inputView.frame.origin.x,
-                                     MAX(0, accessoryY),
+                                     MIN(bottomOfWebView, MAX(0, accessoryY)),
                                      weakSelf.inputView.frame.size.width,
                                      weakSelf.inputView.frame.size.height);
         
@@ -265,6 +269,23 @@ int RIGHT_BUTTON_ARG = 3;
         
         [weakSelf.webView.superview layoutIfNeeded];
     };
+}
+
+-(BOOL)shouldAddTabBarHeightToInsets{
+    return (! self.webViewController.navigationController.tabBarController.tabBar.hidden &&
+            ! self.webViewController.containerViewController.hidesBottomBarWhenPushed &&
+            self.webViewController.navigationController.tabBarController.tabBar.isTranslucent);
+}
+
+
+-(CGFloat)tabBarHeight{
+    if([self shouldAddTabBarHeightToInsets]){
+        CGRect tabBarFrame = self.webViewController.navigationController.tabBarController.tabBar.frame;
+        return tabBarFrame.size.height;
+    }
+    else{
+        return 0.0;
+    }
 }
 
 - (void)setup:(CDVInvokedUrlCommand*)command{
@@ -443,34 +464,6 @@ int RIGHT_BUTTON_ARG = 3;
 }
 
 #pragma Keyboard Events
--(CGFloat)tabBarHeight{
-    return self.webViewController.tabBarHeight;
-}
-
--(void)moveToAboveKeyboard:(NSDictionary*)userInfo{
-    CGSize keyboardSize = [[userInfo objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
-    
-    CGFloat newY = self.superViewFrame.size.height - keyboardSize.height - inputView.frame.size.height;
-    
-    [self moveToYPosition:newY animationDuration:[userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue] animationCurve:[userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
-}
-
--(void)moveToBelowKeyboard:(NSDictionary*)userInfo{
-    
-    CGFloat newY = self.superViewFrame.size.height - self.tabBarHeight - inputView.frame.size.height;
-    
-    [self moveToYPosition:newY animationDuration:[userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue] animationCurve:[userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
-}
-
--(void)moveToYPosition:(CGFloat)newY animationDuration:(NSTimeInterval)duration animationCurve:(NSTimeInterval)curve{
-    CGRect newFrame = CGRectMake(inputView.frame.origin.x, newY, inputView.frame.size.width, inputView.frame.size.height);
-    [UIView beginAnimations:nil context:NULL];
-    [UIView setAnimationDuration:duration];
-    [UIView setAnimationCurve:curve];
-    [UIView setAnimationBeginsFromCurrentState:YES];
-    inputView.frame = newFrame;
-    [UIView commitAnimations];
-}
 
 -(void)keyboardDidHide:(NSNotification *)notification{
     if([self isNotNull:self.onKeyboardClosedCallbackId]){
