@@ -94,12 +94,14 @@ int RIGHT_BUTTON_ARG = 3;
 }
 
 -(AGInputView*)loadAGInputView{
+    
     NSArray* nibViews = [[NSBundle mainBundle] loadNibNamed:@"AGInputView" owner:self.webView.superview options:nil];
     for (id currentObject in nibViews) {
         if ([currentObject isKindOfClass:[AGInputView class]]) {
             return (AGInputView *) currentObject;
         }
     }
+    
     return nil;
 }
 
@@ -235,40 +237,46 @@ int RIGHT_BUTTON_ARG = 3;
     
     [self.webView.superview addSubview:self.inputView];
     
+    self.inputView.translatesAutoresizingMaskIntoConstraints = YES;
+    
     NSDictionary *viewsDictionary = NSDictionaryOfVariableBindings(inputView);
-    NSDictionary *metrics = @{
-                              @"inputViewHeight":[NSNumber numberWithInt:self.inputViewHeight],
-                              @"bottomGap":[NSNumber numberWithInt:self.bottomGap]
-                              };
     
     [self.webView.superview.superview addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[inputView]|"
-                                                                                             options:0 metrics:metrics views:viewsDictionary]];
+                                                                                             options:0 metrics:nil views:viewsDictionary]];
     
-    [self.webView.superview.superview addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[inputView(inputViewHeight)]-bottomGap-|"
-                                                                                             options:0 metrics:metrics views:viewsDictionary]];
-
     FrameObservingInputAccessoryView *frameObservingView = [[FrameObservingInputAccessoryView alloc] initWithFrame:CGRectMake(0, 0, self.webView.superview.frame.size.width, self.inputViewHeight)];
     
     frameObservingView.userInteractionEnabled = NO;
     
     self.inputView.inputField.inputAccessoryView = frameObservingView;
     
+    CGFloat parentHeight = self.webView.superview.frame.size.height;
+    CGFloat myHeight = self.inputViewHeight;
+    CGFloat tabBarHeight = self.tabBarHeight;
+    
     __weak typeof(self)weakSelf = self;
     
     frameObservingView.inputAcessoryViewFrameChangedBlock = ^(CGRect inputAccessoryViewFrame){
         CGFloat accessoryY = CGRectGetMinY(inputAccessoryViewFrame);
         
-        CGFloat bottomOfWebView = weakSelf.webView.superview.frame.size.height - weakSelf.inputView.frame.size.height - weakSelf.tabBarHeight;
+        CGFloat inputViewY = parentHeight - myHeight  - tabBarHeight;
+        inputViewY = MIN(inputViewY, MAX(0, accessoryY));
         
-        CGRect newFrame = CGRectMake(weakSelf.inputView.frame.origin.x,
-                                     MIN(bottomOfWebView, MAX(0, accessoryY)),
-                                     weakSelf.inputView.frame.size.width,
-                                     weakSelf.inputView.frame.size.height);
+        CGRect newFrame = CGRectMake(0,
+                                     inputViewY,
+                                     weakSelf.webView.superview.frame.size.width,
+                                     myHeight);
         
         weakSelf.inputView.frame = newFrame;
-        
-        [weakSelf.webView.superview layoutIfNeeded];
     };
+
+    CGFloat inputViewY = parentHeight - myHeight  - tabBarHeight;
+    CGRect newFrame = CGRectMake(0,
+                                 inputViewY,
+                                 self.webView.superview.frame.size.width,
+                                 myHeight);
+    
+    self.inputView.frame = newFrame;
 }
 
 -(BOOL)shouldAddTabBarHeightToInsets{
@@ -291,7 +299,9 @@ int RIGHT_BUTTON_ARG = 3;
 - (void)setup:(CDVInvokedUrlCommand*)command{
     [self addInputViewToSuperView];
     
-    if([self isValidDictionaryWithValues:[command.arguments objectAtIndex:PANEL_ARG]]){
+    self.inputView.hidden = YES;
+    
+    if([self isValidDictionaryWithValues:[command.arguments objectAtIndex:INPUT_ARG]]){
         NSDictionary* inputOptions = (NSDictionary*)[command.arguments objectAtIndex:INPUT_ARG];
         [self setInpuFieldOptions:inputOptions];
     }
@@ -337,6 +347,10 @@ int RIGHT_BUTTON_ARG = 3;
     
     self.inputView.hidden = NO;
     
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
+}
+
+- (void)showKeyboard:(CDVInvokedUrlCommand*)command{
     [inputView.inputField becomeFirstResponder];
     
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
