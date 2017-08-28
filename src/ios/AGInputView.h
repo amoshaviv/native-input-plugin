@@ -7,29 +7,29 @@
 //
 
 #import <UIKit/UIKit.h>
-#import <PixateFreestyle/PixateFreestyle.h>
-#import <PixateFreestyle/PXVirtualStyleableControl.h>
-#import <PixateFreestyle/PXUtils.h>
-#import <PixateFreestyle/PXOpacityStyler.h>
-#import <PixateFreestyle/PXShapeStyler.h>
-#import <PixateFreestyle/PXFillStyler.h>
-#import <PixateFreestyle/PXBorderStyler.h>
-#import <PixateFreestyle/PXBoxShadowStyler.h>
-#import <PixateFreestyle/PXTextShadowStyler.h>
-#import <PixateFreestyle/PXFontStyler.h>
-#import <PixateFreestyle/PXPaintStyler.h>
-#import <PixateFreestyle/PXTitaniumMacros.h>
-#import <PixateFreestyle/PXVirtualStyleableControl.h>
-
-#import <PixateFreestyle/PXStylingMacros.h>
-#import <PixateFreestyle/UIView+PXStyling.h>
-#import <PixateFreestyle/UIView+PXStyling-Private.h>
-
-#import <PixateFreestyle/PXUIView.h>
-
-#import <PixateFreestyle/PXStyleable.h>
-
-#import <PixateFreestyle/PXUIButton.h>
+//#import <PixateFreestyle/PixateFreestyle.h>
+//#import <PixateFreestyle/PXVirtualStyleableControl.h>
+//#import <PixateFreestyle/PXUtils.h>
+//#import <PixateFreestyle/PXOpacityStyler.h>
+//#import <PixateFreestyle/PXShapeStyler.h>
+//#import <PixateFreestyle/PXFillStyler.h>
+//#import <PixateFreestyle/PXBorderStyler.h>
+//#import <PixateFreestyle/PXBoxShadowStyler.h>
+//#import <PixateFreestyle/PXTextShadowStyler.h>
+//#import <PixateFreestyle/PXFontStyler.h>
+//#import <PixateFreestyle/PXPaintStyler.h>
+//#import <PixateFreestyle/PXTitaniumMacros.h>
+//#import <PixateFreestyle/PXVirtualStyleableControl.h>
+//
+//#import <PixateFreestyle/PXStylingMacros.h>
+//#import <PixateFreestyle/UIView+PXStyling.h>
+//#import <PixateFreestyle/UIView+PXStyling-Private.h>
+//
+//#import <PixateFreestyle/PXUIView.h>
+//
+//#import <PixateFreestyle/PXStyleable.h>
+//
+//#import <PixateFreestyle/PXUIButton.h>
 
 @protocol AGInputViewDelegate
 - (void)buttonTapped:(UIButton *)button;

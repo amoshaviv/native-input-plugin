@@ -60,11 +60,11 @@ int RIGHT_BUTTON_ARG = 3;
     self.inputView = [self loadAGInputView];
     
     //move to setup pixate
-    self.inputView.styleClass = @"nativeInput-panel";
-    self.inputView.inputField.styleClass = @"nativeInput";
-    self.inputView.leftButton.styleClass = @"nativeInput-leftButton";
-    self.inputView.rightButton.styleClass = @"nativeInput-rightButton";
-    [self.inputView updateStyles];
+//    self.inputView.styleClass = @"nativeInput-panel";
+//    self.inputView.inputField.styleClass = @"nativeInput";
+//    self.inputView.leftButton.styleClass = @"nativeInput-leftButton";
+//    self.inputView.rightButton.styleClass = @"nativeInput-rightButton";
+//    [self.inputView updateStyles];
     
     self.inputView.inputField.delegate = self;
     self.inputView.delegate = self;
@@ -134,9 +134,10 @@ int RIGHT_BUTTON_ARG = 3;
     [self.webViewController updateScrollInsets];
 }
 
--(void)setInpuFieldOptions:(NSDictionary*)inputOptions {
+-(void)setInputFieldOptions:(NSDictionary*)inputOptions {
     
     NSString* placeHolder = (NSString*)[inputOptions valueForKey:@"placeHolder"];
+    NSString* proceedLabelKey = (NSString*)[inputOptions valueForKey:@"proceedLabelKey"];
     inputView.inputField.placeholder = placeHolder;
     
     NSString* type = (NSString*)[inputOptions valueForKey:@"type"];
@@ -153,67 +154,47 @@ int RIGHT_BUTTON_ARG = 3;
         inputView.inputField.keyboardType = UIKeyboardTypeDefault;
     }
     
-    NSString* styleClass = @"nativeInput";
-    if([self isNotNull:[inputOptions valueForKey:@"styleClass"]]){
-        styleClass = (NSString*)[inputOptions valueForKey:@"styleClass"];
+    if ( !proceedLabelKey ) return;
+    NSLog(@"proceedLabelKey %@", proceedLabelKey );
+    if ( [proceedLabelKey isEqual: @"GO"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeyGo;
     }
+    else if ( [proceedLabelKey isEqual: @"DONE"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeyDone;
+    }
+    else if ( [proceedLabelKey isEqual: @"JOIN"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeyJoin;
+    }
+    else if ( [proceedLabelKey isEqual: @"NEXT"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeyNext;
+    }
+    else if ( [proceedLabelKey isEqual: @"SEND"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeySend;
+    }
+    else if ( [proceedLabelKey isEqual: @"ROUTE"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeyRoute;
+    }
+    else if ( [proceedLabelKey isEqual: @"SEARCH"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeySearch;
+    }
+    else if ( [proceedLabelKey isEqual: @"CONTINUE"] ) {
+        inputView.inputField.returnKeyType = UIReturnKeyContinue;
+    }
+    // Else it's the default
     
-    NSString* styleId = (NSString *) [inputOptions valueForKey:@"styleId"];
-    NSString* styleCss = (NSString *) [inputOptions valueForKey:@"styleCSS"];
-    
-    inputView.inputField.styleClass = styleClass;
-    if(styleId){
-        inputView.inputField.styleId = styleId;
-    }
-    if(styleCss){
-        inputView.inputField.styleCSS = styleCss;
-    }
-    [inputView.inputField updateStyles];
 }
 
 -(void)setPanelOptions:(NSDictionary*)options{
-    
-    NSString* styleClass = @"nativeInput-panel";
-    
-    if([self isNotNull:[options valueForKey:@"styleClass"]]){
-        styleClass = (NSString*)[options valueForKey:@"styleClass"];
-    }
-    NSString* styleId = (NSString *) [options valueForKey:@"styleId"];
-    NSString* styleCss = (NSString *) [options valueForKey:@"styleCSS"];
-    
-    inputView.styleClass = styleClass;
-    if(styleId){
-        inputView.styleId = styleId;
-    }
-    if(styleCss){
-        inputView.styleCSS = styleCss;
-    }
-    [inputView updateStyles];
 }
 
 -(void)setButton:(UIButton*)button withOptions:(NSDictionary*)options{
+    
+    NSString* buttonLabel = (NSString *) [options valueForKey:@"label"];
+    if (buttonLabel) {
+        NSLog(@"button label %@", buttonLabel );
+        [button setTitle:buttonLabel forState:UIControlStateNormal];
+    }
 
-    NSString* styleClass = (NSString *) [options valueForKey:@"styleClass"];
-    NSString* styleId = (NSString *) [options valueForKey:@"styleId"];
-    NSString* styleCss = (NSString *) [options valueForKey:@"styleCSS"];
-    BOOL cssSet = NO;
-    
-    if(styleClass){
-        button.styleClass = styleClass;
-        cssSet = YES;
-    }
-    if(styleId){
-        button.styleId = styleId;
-        cssSet = YES;
-    }
-    if(styleCss){
-        button.styleCSS = styleCss;
-        cssSet = YES;
-    }
-    
-    if(cssSet){
-        [button updateStyles];
-    }
 }
 
 -(BOOL)isNotNull:(id)obj{
@@ -303,7 +284,7 @@ int RIGHT_BUTTON_ARG = 3;
     
     if([self isValidDictionaryWithValues:[command.arguments objectAtIndex:INPUT_ARG]]){
         NSDictionary* inputOptions = (NSDictionary*)[command.arguments objectAtIndex:INPUT_ARG];
-        [self setInpuFieldOptions:inputOptions];
+        [self setInputFieldOptions:inputOptions];
     }
     
     if([self isValidDictionaryWithValues:[command.arguments objectAtIndex:PANEL_ARG]]){

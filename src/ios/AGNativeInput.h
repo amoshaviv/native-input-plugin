@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <PixateFreestyle/PixateFreestyle.h>
+//#import <PixateFreestyle/PixateFreestyle.h>
 #import "CDVPlugin.h"
 #import "AGInputView.h"
 #import "WebViewController.h"
