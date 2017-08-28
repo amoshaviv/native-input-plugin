@@ -1,7 +1,5 @@
 package com.appgyver.plugins.nativeinput;
 
-import com.appgyver.ui.AGStyler;
-
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -12,8 +10,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,27 +60,17 @@ public class NativeInput extends CordovaPlugin {
 
     private static final String ON_KEYBOARD_ACTION = "onKeyboardAction";
 
+    private static final String SET_VALUE = "setValue";
+
     private static final String GET_VALUE = "getValue";
+
+    private static final String SHOW_KEYBOARD = "showKeyboard";
 
     private static final String CLOSE_KEYBOARD = "closeKeyboard";
 
     private static final String ON_BUTTON_ACTION = "onButtonAction";
 
-    private static final String STYLE_CLASS = "styleClass";
-
-    private static final String NATIVE_INPUT_PANEL = "nativeInput-panel";
-
-    private static final String STYLE_ID = "styleId";
-
-    private static final String STYLE_CSS = "styleCSS";
-
-    private static final String NATIVE_INPUT = "nativeInput";
-
     private static final String PLACE_HOLDER = "placeHolder";
-
-    private static final String NATIVE_INPUT_RIGHT_BUTTON = "nativeInput-rightButton";
-
-    private static final String NATIVE_INPUT_LEFT_BUTTON = "nativeInput-leftButton";
 
     private static final String LEFT = "left";
 
@@ -94,15 +84,11 @@ public class NativeInput extends CordovaPlugin {
 
     private static final String NUMBER = "number";
 
-    private static final String DONE = "done";
+    private static final String NEWLINE_RESULT = "newline";
 
-    private static final String GO = "go";
+    private static final String LABEL = "label";
 
-    private static final String NEXT = "next";
-
-    private static final String SEND = "send";
-
-    private static final String NEWLINE = "newline";
+    private String mProceedLabelKey = null;
 
     private CallbackContext mOnChangeCallback;
 
@@ -121,8 +107,6 @@ public class NativeInput extends CordovaPlugin {
     private Button mRightButton;
 
     private boolean mAutoCloseKeyboard;
-
-    static boolean sPixateInitiated = false;
 
     private TextWatcher mTextChangedListener = new TextWatcher() {
         @Override
@@ -153,10 +137,10 @@ public class NativeInput extends CordovaPlugin {
 
             boolean isNewLineAction = actionId == EditorInfo.IME_ACTION_UNSPECIFIED;
 
-            String action = getActionName(actionId);
+            Log.d( TAG, "actionId is " + actionId + " " + isNewLineAction );
 
             if (mOnKeyboardActionCallback != null) {
-                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, action);
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, NEWLINE_RESULT );
                 pluginResult.setKeepCallback(true);
                 mOnKeyboardActionCallback.sendPluginResult(pluginResult);
             }
@@ -171,13 +155,11 @@ public class NativeInput extends CordovaPlugin {
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
-        setupPixate();
     }
 
     private void createBasicUi() {
         mPanel = new LinearLayout(webView.getContext());
         mPanel.setOrientation(LinearLayout.HORIZONTAL);
-        AGStyler.setStyleClass(mPanel, NATIVE_INPUT_PANEL);
 
         mEditText = new CustomEditText(webView.getContext()){
             @Override
@@ -194,9 +176,9 @@ public class NativeInput extends CordovaPlugin {
             }
         };
 
-        AGStyler.setStyleClass(mEditText, NATIVE_INPUT);
-
-        mEditText.setPadding(8, 4, 8, 8);
+        mEditText.setTextColor(Color.BLACK);
+        mEditText.setHintTextColor(Color.GRAY);
+        mEditText.setBackgroundColor(Color.WHITE);
 
         mEditText.addTextChangedListener(mTextChangedListener);
 
@@ -211,10 +193,6 @@ public class NativeInput extends CordovaPlugin {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 weight);
-        params.leftMargin = 10;
-        params.rightMargin = 10;
-        params.topMargin = 6;
-        params.bottomMargin = 10;
 
         mPanel.addView(mEditText, params);
     }
@@ -244,6 +222,13 @@ public class NativeInput extends CordovaPlugin {
                     }
                 }
             });
+        } else if (action.equals(SHOW_KEYBOARD) ) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    showKeyboard(callbackContext);
+                }
+            });
         } else if (action.equals(HIDE)) {
             hide(callbackContext);
         } else if (action.equals(ON_CHANGE)) {
@@ -252,11 +237,12 @@ public class NativeInput extends CordovaPlugin {
             onKeyboardAction(callbackContext, args);
         } else if (action.equals(ON_KEYBOARD_CLOSE)) {
             onKeyboardClose(callbackContext, args);
-        }
-        else if (action.equals(ON_BUTTON_ACTION)) {
+        } else if (action.equals(ON_BUTTON_ACTION)) {
             onButtonAction(callbackContext);
         } else if (action.equals(GET_VALUE)) {
             getValue(callbackContext);
+        } else if (action.equals(SET_VALUE)) {
+            setValue(callbackContext, args);
         } else if (action.equals(CLOSE_KEYBOARD)) {
             closeKeyboard(callbackContext);
         } else {
@@ -270,9 +256,18 @@ public class NativeInput extends CordovaPlugin {
         callbackContext.success();
     }
 
+    private void showKeyboard(CallbackContext callbackContext) {
+        showKeyboard();
+        callbackContext.success();
+    }
+
     private String getValue() {
         String value = mEditText.getText().toString();
         return value;
+    }
+
+    private void setValue(String value) {
+        mEditText.setText(value);
     }
 
     private void setup(final CallbackContext callbackContext, final JSONArray args)
@@ -304,8 +299,6 @@ public class NativeInput extends CordovaPlugin {
             addLeftButton(args.getJSONObject(LEFT_BUTTON_ARG), hasRightButton);
         }
 
-        AGStyler.updateStyle(mEditText);
-
         callbackContext.success();
     }
 
@@ -323,13 +316,6 @@ public class NativeInput extends CordovaPlugin {
 
 
     private void setupPanelOptions(JSONObject panelArgs) throws JSONException {
-        String styleClass = NATIVE_INPUT_PANEL + " " + panelArgs.optString(STYLE_CLASS, "");
-        String styleId = panelArgs.optString(STYLE_ID, "");
-        String styleCSS = panelArgs.optString(STYLE_CSS, "");
-
-        AGStyler.setStyleClass(mPanel, styleClass);
-        AGStyler.setStyleId(mPanel, styleId);
-        AGStyler.setStyle(mPanel, styleCSS);
     }
 
     private void setupEditTextOptions(JSONObject inputArgs) throws JSONException {
@@ -345,35 +331,51 @@ public class NativeInput extends CordovaPlugin {
             mEditText.setSingleLine(true);
         }
 
-        String styleClass = NATIVE_INPUT + " " + inputArgs.optString(STYLE_CLASS, "");
-        String styleId = inputArgs.optString(STYLE_ID, "");
-        String styleCSS = inputArgs.optString(STYLE_CSS, "");
+        String proceedLabelKey = inputArgs.optString("proceedLabelKey");
+        mProceedLabelKey = proceedLabelKey;
+        if ( proceedLabelKey.equals("SEND") ) {
+            mEditText.setImeOptions(EditorInfo.IME_ACTION_SEND);
+        }
+        int imeOptions = EditorInfo.IME_ACTION_UNSPECIFIED;
+        switch(proceedLabelKey) {
+            case "GO":
+                imeOptions = EditorInfo.IME_ACTION_GO;
+                break;
+            case "DONE":
+                imeOptions = EditorInfo.IME_ACTION_DONE;
+                break;
+            case "JOIN":
+                imeOptions = EditorInfo.IME_ACTION_GO;
+                break;
+            case "NEXT":
+                imeOptions = EditorInfo.IME_ACTION_NEXT;
+                break;
+            case "SEND":
+                imeOptions = EditorInfo.IME_ACTION_SEND;
+                break;
+            case "ROUTE":
+                imeOptions = EditorInfo.IME_ACTION_GO;
+                break;
+            case "SEARCH":
+                imeOptions = EditorInfo.IME_ACTION_SEARCH;
+                break;
+            case "CONTINUE":
+                imeOptions = EditorInfo.IME_ACTION_NEXT;
+                break;
+        }
+        mEditText.setImeOptions(imeOptions);
 
-        AGStyler.setStyleClass(mEditText, styleClass);
-        AGStyler.setStyleId(mEditText, styleId);
-        AGStyler.setStyle(mEditText, styleCSS);
     }
 
     private String getPlaceholderText(JSONObject inputArgs) {
         return inputArgs.optString(PLACE_HOLDER, "");
     }
 
-    private void addRightButton(JSONObject jsonObject, boolean hasLeftButton) throws JSONException {
+    private void addRightButton(JSONObject jsonObject, boolean hasLeftButton) {
         mRightButton = new Button(webView.getContext());
 
-
-        float weight = hasLeftButton ? 2f : 1f;
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
-                weight);
-        params.leftMargin = 0;
-        params.rightMargin = 10;
-        params.topMargin = 12;
-        params.bottomMargin = 10;
-
         mRightButton.setMinWidth(BUTTON_WIDTH);
-        mPanel.addView(mRightButton, params);
+        mRightButton.setMinHeight(BUTTON_HEIGHT);
 
         mRightButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -386,13 +388,13 @@ public class NativeInput extends CordovaPlugin {
             }
         });
 
-        String styleClass = NATIVE_INPUT_RIGHT_BUTTON + " " + jsonObject.optString(STYLE_CLASS, "");
-        String styleId = jsonObject.optString(STYLE_ID, "");
-        String styleCSS = jsonObject.optString(STYLE_CSS, "");
+        String label = jsonObject.optString(LABEL);
+        mRightButton.setText(label);
 
-        AGStyler.setStyleClass(mRightButton, styleClass);
-        AGStyler.setStyleId(mRightButton, styleId);
-        AGStyler.setStyle(mRightButton, styleCSS);
+        mRightButton.setBackgroundColor(Color.WHITE);
+        mRightButton.setTextColor(Color.BLACK);
+
+        mPanel.addView(mRightButton);
     }
 
     private void removeRightButton() {
@@ -405,18 +407,8 @@ public class NativeInput extends CordovaPlugin {
     private void addLeftButton(JSONObject jsonObject, boolean hasRightButton) {
         mLeftButton = new Button(webView.getContext());
 
-        float weight = hasRightButton ? 2f : 1f;
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                BUTTON_WIDTH,
-                BUTTON_HEIGHT,
-                weight);
-        params.leftMargin = 10;
-        params.rightMargin = 0;
-        params.topMargin = 12;
-        params.bottomMargin = 10;
-
         mLeftButton.setMinWidth(BUTTON_WIDTH);
-        mPanel.addView(mLeftButton, 0, params);
+        mLeftButton.setMinHeight(BUTTON_HEIGHT);
 
         mLeftButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -429,13 +421,10 @@ public class NativeInput extends CordovaPlugin {
             }
         });
 
-        String styleClass = NATIVE_INPUT_LEFT_BUTTON + " " + jsonObject.optString(STYLE_CLASS, "");
-        String styleId = jsonObject.optString(STYLE_ID, "");
-        String styleCSS = jsonObject.optString(STYLE_CSS, "");
+        String label = jsonObject.optString(LABEL);
+        mRightButton.setText(label);
 
-        AGStyler.setStyleClass(mLeftButton, styleClass);
-        AGStyler.setStyleId(mLeftButton, styleId);
-        AGStyler.setStyle(mLeftButton, styleCSS);
+        mPanel.addView(mLeftButton);
     }
 
     private void removeLeftButton() {
@@ -531,19 +520,9 @@ public class NativeInput extends CordovaPlugin {
         callbackContext.success(value);
     }
 
-    private String getActionName(int actionId) {
-        if (actionId == EditorInfo.IME_ACTION_DONE) {
-            return DONE;
-        } else if (actionId == EditorInfo.IME_ACTION_GO) {
-            return GO;
-        } else if (actionId == EditorInfo.IME_ACTION_NEXT) {
-            return NEXT;
-        } else if (actionId == EditorInfo.IME_ACTION_SEND) {
-            return SEND;
-        } else if (actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
-            return NEWLINE;
-        }
-        return null;
+    private void setValue(CallbackContext callbackContext, JSONArray args ) {
+        setValue( args.toString() );
+        callbackContext.success();
     }
 
     private void closeKeyboard() {
@@ -552,11 +531,15 @@ public class NativeInput extends CordovaPlugin {
         imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
     }
 
-    private void setupPixate() {
-        if (!sPixateInitiated) {
-            sPixateInitiated = true;
-            AGStyler.loadStyler("com.appgyver.plugins.nativeinput.CustomEditText",
-                    "com.appgyver.plugins.nativeinput.CustomEditTextAdapter");
-        }
+    private void showKeyboard() {
+        InputMethodManager imm =
+                (InputMethodManager) cordova.getActivity().getSystemService(
+                        Context.INPUT_METHOD_SERVICE);
+
+        mEditText.requestFocus();
+        imm.toggleSoftInputFromWindow(
+                mEditText.getWindowToken(),
+                InputMethodManager.SHOW_FORCED, 0);
     }
+
 }
